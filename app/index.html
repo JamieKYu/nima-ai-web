@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Image Assessment Tester</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        td {
+            vertical-align: top;
+            padding: 20px;
+        }
+        td:first-child {
+            width: 50%;
+        }
+        td:last-child {
+            width: 30%;
+        }
+        img {
+            max-width: 100%;
+        }
+        .left-align {
+            text-align: left;
+        }
+        .spinner {
+            display: none;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #000;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Neural Image Assessment Tester</h1>
+
+    <p>
+        NIMA (Neural Image Assessment) is a deep learning model developed to evaluate the aesthetic quality of images by predicting a distribution of ratings rather than a binary classification of low or high quality. Unlike traditional methods that categorize images based on pixel-level degradations, NIMA leverages convolutional neural networks (CNNs) trained on human-labeled data to assess images based on their semantic characteristics, such as beauty and emotional appeal. This approach allows NIMA to provide a more nuanced understanding of image quality, correlating closely with human perceptions and preferences, making it useful for applications like intelligent photo editing and optimizing visual content for user engagement.
+    </p>
+
+    <p>For more information, <a href="https://research.google/blog/introducing-nima-neural-image-assessment/" target="_blank">click here</a></p>
+
+    <table>
+        <tr>
+            <td>
+                <label for="imageInput">Test an image:</label>
+                <input type="file" id="imageInput" accept="image/*">
+                <img id="imagePreview" style="display:none;"/>
+            </td>
+            <td class="left-align">
+                <label for="submitButton">Get the aesthetic score (1-10):</label>
+                <button id="submitButton">Submit</button>
+                <div class="spinner" id="loadingSpinner"></div>
+                <div id="result"></div>
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const submitButton = document.getElementById('submitButton');
+        const resultDiv = document.getElementById('result');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            const maxSizeInMB = 2;
+            const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+
+            if (file && file.size > maxSizeInBytes) {
+                alert(`File size exceeds ${maxSizeInMB} MB. Please choose a smaller file.`);
+                imageInput.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                imagePreview.src = reader.result;
+                imagePreview.style.display = 'block';
+                resultDiv.innerText = '';
+            };
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        });
+
+        submitButton.addEventListener('click', async () => {
+            submitButton.disabled = true;
+            loadingSpinner.style.display = 'inline-block';
+
+            const base64Data = imagePreview.src.split(',')[1];
+            const response = await fetch('https://8qee1emcw3.execute-api.us-east-1.amazonaws.com/dev/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ body: JSON.stringify({ image_data: base64Data }) }),
+            });
+
+            const data = await response.json();
+            const body = JSON.parse(data.body);
+            resultDiv.innerText = `Score: ${body.score}`;
+
+            submitButton.disabled = false;
+            loadingSpinner.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
