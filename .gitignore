@@ -13,6 +13,7 @@ Thumbs.db
 # Environment variable files
 .env
 .env.*.local
+config.js
 
 # Build output
 /dist
